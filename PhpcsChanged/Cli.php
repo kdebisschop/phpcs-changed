@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace PhpcsChanged\Cli;
 
 use PhpcsChanged\NoChangesException;
+use PhpcsChanged\CliOptions;
 use PhpcsChanged\Reporter;
 use PhpcsChanged\JsonReporter;
 use PhpcsChanged\FullReporter;
@@ -193,10 +194,12 @@ function runManualWorkflow(string $diffFile, string $phpcsOldFile, string $phpcs
 	return $messages;
 }
 
-function runSvnWorkflow(array $svnFiles, array $options, ShellOperator $shell, CacheManager $cache, callable $debug): PhpcsMessages {
+function runSvnWorkflow(CliOptions $options, ShellOperator $shell, CacheManager $cache, callable $debug): PhpcsMessages {
 	$svn = getenv('SVN') ?: 'svn';
 	$phpcs = getenv('PHPCS') ?: 'phpcs';
 	$cat = getenv('CAT') ?: 'cat';
+
+	$svnFiles = $options->files;
 
 	try {
 		$debug('validating executables');
@@ -221,12 +224,12 @@ function runSvnWorkflow(array $svnFiles, array $options, ShellOperator $shell, C
 	return PhpcsMessages::merge($phpcsMessages);
 }
 
-function runSvnWorkflowForFile(string $svnFile, array $options, ShellOperator $shell, CacheManager $cache, callable $debug): PhpcsMessages {
+function runSvnWorkflowForFile(string $svnFile, CliOptions $options, ShellOperator $shell, CacheManager $cache, callable $debug): PhpcsMessages {
 	$svn = getenv('SVN') ?: 'svn';
 	$phpcs = getenv('PHPCS') ?: 'phpcs';
 	$cat = getenv('CAT') ?: 'cat';
 
-	$phpcsStandard = $options['standard'] ?? null;
+	$phpcsStandard = $options->phpcsStandard;
 	$phpcsStandardOption = $phpcsStandard ? ' --standard=' . escapeshellarg($phpcsStandard) : '';
 
 	try {
@@ -285,10 +288,12 @@ function runSvnWorkflowForFile(string $svnFile, array $options, ShellOperator $s
 	);
 }
 
-function runGitWorkflow(array $gitFiles, array $options, ShellOperator $shell, CacheManager $cache, callable $debug): PhpcsMessages {
+function runGitWorkflow(CliOptions $options, ShellOperator $shell, CacheManager $cache, callable $debug): PhpcsMessages {
 	$git = getenv('GIT') ?: 'git';
 	$phpcs = getenv('PHPCS') ?: 'phpcs';
 	$cat = getenv('CAT') ?: 'cat';
+
+	$gitFiles = $options->files;
 
 	try {
 		$debug('validating executables');
@@ -296,8 +301,8 @@ function runGitWorkflow(array $gitFiles, array $options, ShellOperator $shell, C
 		$shell->validateExecutableExists('phpcs', $phpcs);
 		$shell->validateExecutableExists('cat', $cat);
 		$debug('executables are valid');
-		if (isset($options['git-base']) && ! empty($options['git-base'])) {
-			$options['git-base'] = getGitMergeBase($git, [$shell, 'executeCommand'], $options, $debug);
+		if ($options->mode === 'git-base' && ! empty($options->gitBase)) {
+			$options->gitBase = getGitMergeBase($git, [$shell, 'executeCommand'], $options, $debug);
 		}
 	} catch(\Exception $err) {
 		$shell->printError($err->getMessage());
@@ -316,12 +321,12 @@ function runGitWorkflow(array $gitFiles, array $options, ShellOperator $shell, C
 	return PhpcsMessages::merge($phpcsMessages);
 }
 
-function runGitWorkflowForFile(string $gitFile, array $options, ShellOperator $shell, CacheManager $cache, callable $debug): PhpcsMessages {
+function runGitWorkflowForFile(string $gitFile, CliOptions $options, ShellOperator $shell, CacheManager $cache, callable $debug): PhpcsMessages {
 	$git = getenv('GIT') ?: 'git';
 	$phpcs = getenv('PHPCS') ?: 'phpcs';
 	$cat = getenv('CAT') ?: 'cat';
 
-	$phpcsStandard = $options['standard'] ?? null;
+	$phpcsStandard = $options->phpcsStandard;
 	$phpcsStandardOption = $phpcsStandard ? ' --standard=' . escapeshellarg($phpcsStandard) : '';
 
 	try {
@@ -382,15 +387,14 @@ function runGitWorkflowForFile(string $gitFile, array $options, ShellOperator $s
 	return getNewPhpcsMessages($unifiedDiff, PhpcsMessages::fromPhpcsJson($oldFilePhpcsOutput, $fileName), PhpcsMessages::fromPhpcsJson($newFilePhpcsOutput, $fileName));
 }
 
-function reportMessagesAndExit(PhpcsMessages $messages, string $reportType, array $options): void {
-	$reporter = getReporter($reportType);
+function reportMessagesAndExit(PhpcsMessages $messages, CliOptions $options): void {
+	$reporter = getReporter($options->reporter);
 	echo $reporter->getFormattedMessages($messages, $options);
 	exit($reporter->getExitCode($messages));
 }
 
 function fileHasValidExtension(\SplFileInfo $file): bool {
 	// The following logic is copied from PHPCS itself. See https://github.com/squizlabs/PHP_CodeSniffer/blob/2ecd8dc15364cdd6e5089e82ffef2b205c98c412/src/Filters/Filter.php#L161
-	// phpcs:disable
 	$AllowedExtensions = [
 		'php',
 		'inc',
@@ -410,7 +414,7 @@ function fileHasValidExtension(\SplFileInfo $file): bool {
 
 	$extensions = [];
 	array_shift($fileParts);
-	foreach ($fileParts as $part) {
+	foreach ($fileParts as $part) { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
 		$extensions[] = implode('.', $fileParts);
 		array_shift($fileParts);
 	}
@@ -420,7 +424,6 @@ function fileHasValidExtension(\SplFileInfo $file): bool {
 	}
 
 	return true;
-	// phpcs:enable
 }
 
 function shouldIgnorePath(string $path, string $patternOption = null): bool {
@@ -500,17 +503,11 @@ function shouldIgnorePath(string $path, string $patternOption = null): bool {
 	return false;
 }
 
-function isCachingEnabled(array $options): bool {
-	if (isset($options['no-cache'])) {
-		return false;
-	}
-	if (isset($options['cache'])) {
-		return true;
-	}
-	return false;
+function isCachingEnabled(CliOptions $options): bool {
+	return $options->useCache;
 }
 
-function loadCache(CacheManager $cache, ShellOperator $shell, array $options): void {
+function loadCache(CacheManager $cache, ShellOperator $shell, CliOptions $options): void {
 	if (isCachingEnabled($options)) {
 		try {
 			$cache->load();
@@ -525,7 +522,7 @@ function loadCache(CacheManager $cache, ShellOperator $shell, array $options): v
 		}
 	}
 
-	if (isset($options['clear-cache'])) {
+	if ($options->clearCache) {
 		$cache->clearCache();
 		try {
 			$cache->save();
@@ -537,7 +534,7 @@ function loadCache(CacheManager $cache, ShellOperator $shell, array $options): v
 	}
 }
 
-function saveCache(CacheManager $cache, ShellOperator $shell, array $options): void {
+function saveCache(CacheManager $cache, ShellOperator $shell, CliOptions $options): void {
 	if (isCachingEnabled($options)) {
 		try {
 			$cache->save();
