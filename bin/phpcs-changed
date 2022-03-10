@@ -36,8 +36,7 @@ $long_options = [
 ];
 $options = getopt(
 	'hs',
-	$long_options,
-	$optind
+	$long_options
 );
 
 $fileNames = array_slice($argv, $optind);
