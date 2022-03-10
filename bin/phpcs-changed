@@ -7,17 +7,15 @@ if ('cli' !== php_sapi_name()) {
 
 require_once __DIR__ . '/../index.php';
 
-use function PhpcsChanged\Cli\{
-	printHelp,
-	printVersion,
-	printErrorAndExit,
-	getDebug,
-	runManualWorkflow,
-	runSvnWorkflow,
-	runGitWorkflow,
-	reportMessagesAndExit,
-	fileHasValidExtension
-};
+use function PhpcsChanged\Cli\printHelp;
+use function PhpcsChanged\Cli\printVersion;
+use function PhpcsChanged\Cli\printErrorAndExit;
+use function PhpcsChanged\Cli\getDebug;
+use function PhpcsChanged\Cli\runManualWorkflow;
+use function PhpcsChanged\Cli\runSvnWorkflow;
+use function PhpcsChanged\Cli\runGitWorkflow;
+use function PhpcsChanged\Cli\reportMessagesAndExit;
+use function PhpcsChanged\Cli\fileHasValidExtension;
 use PhpcsChanged\UnixShell;
 
 $optind = 0;
@@ -46,7 +44,7 @@ $fileNamesExpanded = [];
 foreach( $fileNames as $file ) {
 	if (is_dir($file)) {
 		$iterator = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator(new RecursiveDirectoryIterator($file, (RecursiveDirectoryIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS)), function($file, $key, $iterator){
-			
+
 			if ($file->isFile() && !fileHasValidExtension($file)) {
 				return false;
 			}
@@ -72,12 +70,12 @@ if (isset($options['version'])) {
 $debug = getDebug(isset($options['debug']));
 run($options, $fileNamesExpanded, $debug);
 
-function run(array $options, array $fileNamesExpanded, callable $debug): void {
+function run(array $options, array $fileNamesExpanded, callable $debug) {
 	$debug('Running on filenames: ' . implode(', ', $fileNamesExpanded));
-	$reportType = $options['report'] ?? 'full';
-	$diffFile = $options['diff'] ?? null;
-	$phpcsOldFile = $options['phpcs-orig'] ?? null;
-	$phpcsNewFile = $options['phpcs-new'] ?? null;
+	$reportType = isset($options['report']) ? $options['report'] : 'full';
+	$diffFile = isset($options['diff']) ? $options['diff'] : NULL;
+	$phpcsOldFile = isset($options['phpcs-orig']) ? $options['phpcs-orig'] : NULL;
+	$phpcsNewFile = isset($options['phpcs-new']) ? $options['phpcs-new'] : NULL;
 
 	if ($diffFile && $phpcsOldFile && $phpcsNewFile) {
 		reportMessagesAndExit(
