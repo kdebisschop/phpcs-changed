@@ -19,23 +19,24 @@ use function PhpcsChanged\Cli\fileHasValidExtension;
 use PhpcsChanged\UnixShell;
 
 $optind = 0;
+$long_options = [
+  'help',
+  'version',
+  'diff:',
+  'phpcs-orig:',
+  'phpcs-new:',
+  'svn',
+  'git',
+  'git-unstaged',
+  'git-staged',
+  'git-branch:',
+  'standard:',
+  'report:',
+  'debug'
+];
 $options = getopt(
 	'hs',
-	[
-		'help',
-		'version',
-		'diff:',
-		'phpcs-orig:',
-		'phpcs-new:',
-		'svn',
-		'git',
-		'git-unstaged',
-		'git-staged',
-		'git-branch:',
-		'standard:',
-		'report:',
-		'debug'
-	],
+	$long_options,
 	$optind
 );
 
