@@ -39,6 +39,7 @@ $options = getopt(
 	$long_options
 );
 
+$optind = array_search('--', $argv, true) + 1;
 $fileNames = array_slice($argv, $optind);
 $fileNamesExpanded = [];
 foreach( $fileNames as $file ) {
