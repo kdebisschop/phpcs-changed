@@ -1,12 +1,11 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged\GitWorkflow;
 
 use PhpcsChanged\NoChangesException;
 use PhpcsChanged\ShellException;
 
-function validateGitFileExists(string $gitFile, string $git, callable $isReadable, callable $executeCommand, callable $debug): void {
+function validateGitFileExists($gitFile, $git, callable $isReadable, callable $executeCommand, callable $debug) {
 	if (! $isReadable($gitFile)) {
 		throw new ShellException("Cannot read file '{$gitFile}'");
 	}
@@ -19,7 +18,7 @@ function validateGitFileExists(string $gitFile, string $git, callable $isReadabl
 	}
 }
 
-function getGitUnifiedDiff(string $gitFile, string $git, callable $executeCommand, array $options, callable $debug): string {
+function getGitUnifiedDiff($gitFile, $git, callable $executeCommand, array $options, callable $debug) {
 	$branchOption = isset($options['git-branch']) && ! empty($options['git-branch']) ? ' ' . escapeshellarg($options['git-branch']) . '...' : '';
 	$stagedOption = empty( $branchOption ) && ! isset($options['git-unstaged']) ? ' --staged' : '';
 	$unifiedDiffCommand = "{$git} diff{$stagedOption}{$branchOption} --no-prefix " . escapeshellarg($gitFile);
@@ -32,7 +31,7 @@ function getGitUnifiedDiff(string $gitFile, string $git, callable $executeComman
 	return $unifiedDiff;
 }
 
-function isNewGitFile(string $gitFile, string $git, callable $executeCommand, array $options, callable $debug): bool {
+function isNewGitFile($gitFile, $git, callable $executeCommand, array $options, callable $debug) {
 	if ( isset($options['git-branch']) && ! empty($options['git-branch']) ) {
 		return isNewGitFileRemote( $gitFile, $git, $executeCommand, $options, $debug );
 	} else {
@@ -40,7 +39,7 @@ function isNewGitFile(string $gitFile, string $git, callable $executeCommand, ar
 	}
 }
 
-function isNewGitFileRemote(string $gitFile, string $git, callable $executeCommand, array $options, callable $debug): bool {
+function isNewGitFileRemote($gitFile, $git, callable $executeCommand, array $options, callable $debug) {
 	$gitStatusCommand = "${git} cat-file -e " . escapeshellarg($options['git-branch']) . ':' . escapeshellarg($gitFile);
 	$debug('checking status of file with command:', $gitStatusCommand);
 	$return_val = 1;
@@ -51,7 +50,7 @@ function isNewGitFileRemote(string $gitFile, string $git, callable $executeComma
 	return 0 !== $return_val;
 }
 
-function isNewGitFileLocal(string $gitFile, string $git, callable $executeCommand, array $options, callable $debug): bool {
+function isNewGitFileLocal($gitFile, $git, callable $executeCommand, array $options, callable $debug) {
 	$gitStatusCommand = "${git} status --short " . escapeshellarg($gitFile);
 	$debug('checking git status of file with command:', $gitStatusCommand);
 	$gitStatusOutput = $executeCommand($gitStatusCommand);
@@ -65,7 +64,7 @@ function isNewGitFileLocal(string $gitFile, string $git, callable $executeComman
 	return isset($gitStatusOutput[0]) && $gitStatusOutput[0] === 'A';
 }
 
-function getGitBasePhpcsOutput(string $gitFile, string $git, string $phpcs, string $phpcsStandardOption, callable $executeCommand, array $options, callable $debug): string {
+function getGitBasePhpcsOutput($gitFile, $git, $phpcs, $phpcsStandardOption, callable $executeCommand, array $options, callable $debug) {
 	if ( isset($options['git-branch']) && ! empty($options['git-branch']) ) {
 		$rev = escapeshellarg($options['git-branch']);
 	} else {
@@ -81,7 +80,7 @@ function getGitBasePhpcsOutput(string $gitFile, string $git, string $phpcs, stri
 	return $oldFilePhpcsOutput;
 }
 
-function getGitNewPhpcsOutput(string $gitFile, string $phpcs, string $cat, string $phpcsStandardOption, callable $executeCommand, callable $debug): string {
+function getGitNewPhpcsOutput($gitFile, $phpcs, $cat, $phpcsStandardOption, callable $executeCommand, callable $debug) {
 	$newFilePhpcsOutputCommand = "{$cat} " . escapeshellarg($gitFile) . " | {$phpcs} --report=json -q" . $phpcsStandardOption . ' --stdin-path=' .  escapeshellarg($gitFile) .' -';
 	$debug('running new phpcs command:', $newFilePhpcsOutputCommand);
 	$newFilePhpcsOutput = $executeCommand($newFilePhpcsOutputCommand);

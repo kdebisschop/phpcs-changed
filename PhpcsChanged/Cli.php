@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged\Cli;
 
@@ -10,9 +9,19 @@ use PhpcsChanged\FullReporter;
 use PhpcsChanged\PhpcsMessages;
 use PhpcsChanged\DiffLineMap;
 use PhpcsChanged\ShellOperator;
-use function PhpcsChanged\{getNewPhpcsMessages, getNewPhpcsMessagesFromFiles, getVersion};
-use function PhpcsChanged\SvnWorkflow\{getSvnUnifiedDiff, isNewSvnFile, getSvnBasePhpcsOutput, getSvnNewPhpcsOutput, validateSvnFileExists};
-use function PhpcsChanged\GitWorkflow\{getGitUnifiedDiff, isNewGitFile, getGitBasePhpcsOutput, getGitNewPhpcsOutput, validateGitFileExists};
+use function PhpcsChanged\getNewPhpcsMessages;
+use function PhpcsChanged\getNewPhpcsMessagesFromFiles;
+use function PhpcsChanged\getVersion;
+use function PhpcsChanged\SvnWorkflow\getSvnUnifiedDiff;
+use function PhpcsChanged\SvnWorkflow\isNewSvnFile;
+use function PhpcsChanged\SvnWorkflow\getSvnBasePhpcsOutput;
+use function PhpcsChanged\SvnWorkflow\getSvnNewPhpcsOutput;
+use function PhpcsChanged\SvnWorkflow\validateSvnFileExists;
+use function PhpcsChanged\GitWorkflow\getGitUnifiedDiff;
+use function PhpcsChanged\GitWorkflow\isNewGitFile;
+use function PhpcsChanged\GitWorkflow\getGitBasePhpcsOutput;
+use function PhpcsChanged\GitWorkflow\getGitNewPhpcsOutput;
+use function PhpcsChanged\GitWorkflow\validateGitFileExists;
 
 function getDebug($debugEnabled) {
 	return function(...$outputs) use ($debugEnabled) {
@@ -36,13 +45,13 @@ function printErrorAndExit($output) {
 	exit(1);
 }
 
-function getLongestString(array $strings): int {
-	return array_reduce($strings, function(int $length, string $string): int {
+function getLongestString(array $strings) {
+	return array_reduce($strings, function($length, $string) {
 		return ($length > strlen($string)) ? $length : strlen($string);
 	}, 0);
 }
 
-function printTwoColumns(array $columns, string $indent) {
+function printTwoColumns(array $columns, $indent) {
 	$longestFirstCol = getLongestString(array_keys($columns));
 	echo PHP_EOL;
 	foreach ($columns as $firstCol => $secondCol) {
@@ -137,7 +146,7 @@ Overrides:
 EOF;
 }
 
-function getReporter(string $reportType): Reporter {
+function getReporter($reportType) {
 	switch ($reportType) {
 		case 'full':
 			return new FullReporter();
@@ -147,7 +156,7 @@ function getReporter(string $reportType): Reporter {
 	printErrorAndExit("Unknown Reporter '{$reportType}'");
 }
 
-function runManualWorkflow($diffFile, $phpcsOldFile, $phpcsNewFile): PhpcsMessages {
+function runManualWorkflow($diffFile, $phpcsOldFile, $phpcsNewFile) {
 	try {
 		$messages = getNewPhpcsMessagesFromFiles(
 			$diffFile,
@@ -161,7 +170,7 @@ function runManualWorkflow($diffFile, $phpcsOldFile, $phpcsNewFile): PhpcsMessag
 	return $messages;
 }
 
-function runSvnWorkflow(array $svnFiles, array $options, ShellOperator $shell, callable $debug): PhpcsMessages {
+function runSvnWorkflow(array $svnFiles, array $options, ShellOperator $shell, callable $debug) {
 	$svn = getenv('SVN') ?: 'svn';
 	$phpcs = getenv('PHPCS') ?: 'phpcs';
 	$cat = getenv('CAT') ?: 'cat';
@@ -178,18 +187,18 @@ function runSvnWorkflow(array $svnFiles, array $options, ShellOperator $shell, c
 		throw $err; // Just in case we do not actually exit, like in tests
 	}
 
-	$phpcsMessages = array_map(function(string $svnFile) use ($options, $shell, $debug): PhpcsMessages {
+	$phpcsMessages = array_map(function($svnFile) use ($options, $shell, $debug) {
 		return runSvnWorkflowForFile($svnFile, $options, $shell, $debug);
 	}, $svnFiles);
 	return PhpcsMessages::merge($phpcsMessages);
 }
 
-function runSvnWorkflowForFile(string $svnFile, array $options, ShellOperator $shell, callable $debug): PhpcsMessages {
+function runSvnWorkflowForFile($svnFile, array $options, ShellOperator $shell, callable $debug) {
 	$svn = getenv('SVN') ?: 'svn';
 	$phpcs = getenv('PHPCS') ?: 'phpcs';
 	$cat = getenv('CAT') ?: 'cat';
 
-	$phpcsStandard = $options['standard'] ?? null;
+	$phpcsStandard = isset($options['standard']) ? $options['standard'] : NULL;
 	$phpcsStandardOption = $phpcsStandard ? ' --standard=' . escapeshellarg($phpcsStandard) : '';
 
 	try {
@@ -214,7 +223,7 @@ function runSvnWorkflowForFile(string $svnFile, array $options, ShellOperator $s
 	return getNewPhpcsMessages($unifiedDiff, PhpcsMessages::fromPhpcsJson($oldFilePhpcsOutput, $fileName), PhpcsMessages::fromPhpcsJson($newFilePhpcsOutput, $fileName));
 }
 
-function runGitWorkflow(array $gitFiles, array $options, ShellOperator $shell, callable $debug): PhpcsMessages {
+function runGitWorkflow(array $gitFiles, array $options, ShellOperator $shell, callable $debug) {
 	$git = getenv('GIT') ?: 'git';
 	$phpcs = getenv('PHPCS') ?: 'phpcs';
 	$cat = getenv('CAT') ?: 'cat';
@@ -231,18 +240,18 @@ function runGitWorkflow(array $gitFiles, array $options, ShellOperator $shell, c
 		throw $err; // Just in case we do not actually exit
 	}
 
-	$phpcsMessages = array_map(function(string $gitFile) use ($options, $shell, $debug): PhpcsMessages {
+	$phpcsMessages = array_map(function($gitFile) use ($options, $shell, $debug) {
 		return runGitWorkflowForFile($gitFile, $options, $shell, $debug);
 	}, $gitFiles);
 	return PhpcsMessages::merge($phpcsMessages);
 }
 
-function runGitWorkflowForFile(string $gitFile, array $options, ShellOperator $shell, callable $debug): PhpcsMessages {
+function runGitWorkflowForFile($gitFile, array $options, ShellOperator $shell, callable $debug) {
 	$git = getenv('GIT') ?: 'git';
 	$phpcs = getenv('PHPCS') ?: 'phpcs';
 	$cat = getenv('CAT') ?: 'cat';
 
-	$phpcsStandard = $options['standard'] ?? null;
+	$phpcsStandard = isset($options['standard']) ? $options['standard'] : NULL;
 	$phpcsStandardOption = $phpcsStandard ? ' --standard=' . escapeshellarg($phpcsStandard) : '';
 
 	try {
@@ -267,13 +276,13 @@ function runGitWorkflowForFile(string $gitFile, array $options, ShellOperator $s
 	return getNewPhpcsMessages($unifiedDiff, PhpcsMessages::fromPhpcsJson($oldFilePhpcsOutput, $fileName), PhpcsMessages::fromPhpcsJson($newFilePhpcsOutput, $fileName));
 }
 
-function reportMessagesAndExit(PhpcsMessages $messages, string $reportType, array $options): void {
+function reportMessagesAndExit(PhpcsMessages $messages, $reportType, array $options) {
 	$reporter = getReporter($reportType);
 	echo $reporter->getFormattedMessages($messages, $options);
 	exit($reporter->getExitCode($messages));
 }
 
-function fileHasValidExtension(\SplFileInfo $file): bool {
+function fileHasValidExtension(\SplFileInfo $file) {
 	// The followin logic follows the same in PHPCS. See https://github.com/squizlabs/PHP_CodeSniffer/blob/2ecd8dc15364cdd6e5089e82ffef2b205c98c412/src/Filters/Filter.php#L161
 	$AllowedExtensions = [
 		'php',

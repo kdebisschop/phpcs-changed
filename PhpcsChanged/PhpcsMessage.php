@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged;
 
@@ -9,38 +8,38 @@ class PhpcsMessage {
 	private $type;
 	private $otherProperties;
 
-	public function __construct(int $line, string $file = null, string $type, array $otherProperties) {
+	public function __construct($line, $file = null, $type, array $otherProperties) {
 		$this->line = $line;
 		$this->file = $file;
 		$this->type = $type;
 		$this->otherProperties = $otherProperties;
 	}
 
-	public function getLineNumber(): int {
+	public function getLineNumber() {
 		return $this->line;
 	}
 
-	public function getFile(): ?string {
+	public function getFile() {
 		return $this->file;
 	}
 
-	public function setFile(string $file): void {
+	public function setFile($file) {
 		$this->file = $file;
 	}
 
-	public function getType(): string {
+	public function getType() {
 		return $this->type;
 	}
 
-	public function getMessage(): string {
-		return $this->otherProperties['message'] ?? '';
+	public function getMessage() {
+		return isset($this->otherProperties['message']) ? $this->otherProperties['message'] : '';
 	}
 
-	public function getSource(): string {
-		return $this->otherProperties['source'] ?? '';
+	public function getSource() {
+		return isset($this->otherProperties['source']) ? $this->otherProperties['source'] : '';
 	}
 
-	public function toPhpcsArray(): array {
+	public function toPhpcsArray() {
 		return array_merge([
 			'line' => $this->line,
 		], $this->otherProperties);

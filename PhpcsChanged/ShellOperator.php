@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged;
 
@@ -7,13 +6,13 @@ namespace PhpcsChanged;
  * Interface to perform file and shell operations
  */
 interface ShellOperator {
-	public function validateExecutableExists(string $name, string $command): void;
+	public function validateExecutableExists($name, $command);
 
-	public function executeCommand(string $command, array &$output = null, int &$return_val = null): string;
+	public function executeCommand($command, array &$output = null, &$return_val = null);
 
-	public function isReadable(string $fileName): bool;
+	public function isReadable($fileName);
 
-	public function exitWithCode(int $code): void;
+	public function exitWithCode($code);
 
-	public function printError(string $message): void;
+	public function printError($message);
 }

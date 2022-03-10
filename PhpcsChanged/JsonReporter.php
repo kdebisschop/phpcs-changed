@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged;
 
@@ -8,17 +7,17 @@ use PhpcsChanged\PhpcsMessages;
 use PhpcsChanged\PhpcsMessage;
 
 class JsonReporter implements Reporter {
-	public function getFormattedMessages(PhpcsMessages $messages, array $options): string {
-		$files = array_unique(array_map(function(PhpcsMessage $message): string {
-			return $message->getFile() ?? 'STDIN';
+	public function getFormattedMessages(PhpcsMessages $messages, array $options) {
+		$files = array_unique(array_map(function(PhpcsMessage $message) {
+			return $message->getFile() ?: 'STDIN';
 		}, $messages->getMessages()));
 		if (empty($files)) {
 			$files = ['STDIN'];
 		}
 
-		$outputByFile = array_map(function(string $file) use ($messages): array {
-			$messagesForFile = array_values(array_filter($messages->getMessages(), function(PhpcsMessage $message) use ($file): bool {
-				return ($message->getFile() ?? 'STDIN') === $file;
+		$outputByFile = array_map(function($file) use ($messages) {
+			$messagesForFile = array_values(array_filter($messages->getMessages(), function(PhpcsMessage $message) use ($file) {
+				return ($message->getFile() ?: 'STDIN') === $file;
 			}));
 			return $this->getFormattedMessagesForFile($messagesForFile, $file);
 		}, $files);
@@ -47,14 +46,14 @@ class JsonReporter implements Reporter {
 		return $output;
 	}
 
-	private function getFormattedMessagesForFile(array $messages, string $file): array {
+	private function getFormattedMessagesForFile(array $messages, $file) {
 		$errors = array_values(array_filter($messages, function($message) {
 			return $message->getType() === 'ERROR';
 		}));
 		$warnings = array_values(array_filter($messages, function($message) {
 			return $message->getType() === 'WARNING';
 		}));
-		$messageArrays = array_map(function(PhpcsMessage $message): array {
+		$messageArrays = array_map(function(PhpcsMessage $message) {
 			return $message->toPhpcsArray();
 		}, $messages);
 		$dataForJson = [
@@ -67,7 +66,7 @@ class JsonReporter implements Reporter {
 		return $dataForJson;
 	}
 
-	public function getExitCode(PhpcsMessages $messages): int {
+	public function getExitCode(PhpcsMessages $messages) {
 		return (count($messages->getMessages()) > 0) ? 1 : 0;
 	}
 }

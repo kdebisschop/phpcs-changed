@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged;
 
@@ -13,7 +12,7 @@ class DiffLineMap {
 		$this->diffLines = $diffLines;
 	}
 
-	public function getOldLineNumberForLine(int $lineNumber): ?int {
+	public function getOldLineNumberForLine($lineNumber) {
 		foreach ($this->diffLines as $diffLine) {
 			if ($diffLine->getNewLineNumber() === $lineNumber) {
 				return $diffLine->getOldLineNumber();
@@ -26,20 +25,20 @@ class DiffLineMap {
 		$lastOldLine = 0;
 		$lastNewLine = 0;
 		foreach ($this->diffLines as $diffLine) {
-			$lastOldLine = $diffLine->getOldLineNumber() ?? $lastOldLine;
-			$lastNewLine = $diffLine->getNewLineNumber() ?? $lastNewLine;
+			$lastOldLine = $diffLine->getOldLineNumber() ?: $lastOldLine;
+			$lastNewLine = $diffLine->getNewLineNumber() ?: $lastNewLine;
 			if ($diffLine->getType()->isRemove()) {
 				continue;
 			}
-			if (($diffLine->getNewLineNumber() ?? 0) > $lineNumber) {
+			if (($diffLine->getNewLineNumber() ?: 0) > $lineNumber) {
 				return intval( $lineNumber + $lineNumberDelta );
 			}
-			$lineNumberDelta = ($diffLine->getOldLineNumber() ?? 0) - ($diffLine->getNewLineNumber() ?? 0);
+			$lineNumberDelta = ($diffLine->getOldLineNumber() ?: 0) - ($diffLine->getNewLineNumber() ?: 0);
 		}
 		return $lastOldLine + ($lineNumber - $lastNewLine);
 	}
 
-	public static function fromUnifiedDiff(string $unifiedDiff): DiffLineMap {
+	public static function fromUnifiedDiff($unifiedDiff) {
 		$diffStringLines = preg_split("/\r\n|\n|\r/", $unifiedDiff) ?: [];
 		$oldStartLine = $newStartLine = null;
 		$currentOldLine = $currentNewLine = null;
@@ -49,8 +48,8 @@ class DiffLineMap {
 			// Find the start of a hunk
 			$matches = [];
 			if (1 === preg_match('/^@@ \-(\d+),(\d+) \+(\d+),(\d+) @@/', $diffStringLine, $matches)) {
-				$oldStartLine = $matches[1] ?? null;
-				$newStartLine = $matches[3] ?? null;
+				$oldStartLine = isset($matches[1]) ? $matches[1] : NULL;
+				$newStartLine = isset($matches[3]) ? $matches[3] : NULL;
 				$currentOldLine = $oldStartLine;
 				$currentNewLine = $newStartLine;
 				continue;
@@ -77,35 +76,35 @@ class DiffLineMap {
 		return new DiffLineMap($lines);
 	}
 
-	public static function getFileNameFromDiff(string $unifiedDiff): ?string {
+	public static function getFileNameFromDiff($unifiedDiff) {
 		$diffStringLines = preg_split("/\r\n|\n|\r/", $unifiedDiff) ?: [];
 		foreach ($diffStringLines as $diffStringLine) {
 			$matches = [];
 			if (1 === preg_match('/^\-\-\- (\S+)/', $diffStringLine, $matches)) {
-				return $matches[1] ?? null;
+				return isset($matches[1]) ? $matches[1] : NULL;
 			}
 		}
 		return null;
 	}
 
-	private static function getDiffLineTypeForLine(string $line): DiffLineType {
+	private static function getDiffLineTypeForLine($line) {
 		if (self::isLineDiffRemoval($line)) {
 			return DiffLineType::makeRemove();
-		} else if (self::isLineDiffAddition($line)) {
+		} elseif (self::isLineDiffAddition($line)) {
 			return DiffLineType::makeAdd();
 		}
 		return DiffLineType::makeContext();
 	}
 
-	private static function isLineDiffHeader(string $line): bool {
+	private static function isLineDiffHeader($line) {
 		return (1 === preg_match('/^Index: /', $line) || 1 === preg_match('/^====/', $line) || 1 === preg_match('/^\-\-\-/', $line) || 1 === preg_match('/^\+\+\+/', $line));
 	}
 
-	private static function isLineDiffRemoval(string $line): bool {
+	private static function isLineDiffRemoval($line) {
 		return (1 === preg_match('/^\-/', $line));
 	}
 
-	private static function isLineDiffAddition(string $line): bool {
+	private static function isLineDiffAddition($line) {
 		return (1 === preg_match('/^\+/', $line));
 	}
 }

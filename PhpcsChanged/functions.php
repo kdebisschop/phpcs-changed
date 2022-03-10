@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged;
 
@@ -7,11 +6,11 @@ use PhpcsChanged\DiffLineMap;
 use PhpcsChanged\PhpcsMessages;
 use PhpcsChanged\ShellException;
 
-function getVersion(): string {
+function getVersion() {
 	return '2.5.0';
 }
 
-function getNewPhpcsMessages(string $unifiedDiff, PhpcsMessages $oldPhpcsMessages, PhpcsMessages $newPhpcsMessages): PhpcsMessages {
+function getNewPhpcsMessages($unifiedDiff, PhpcsMessages $oldPhpcsMessages, PhpcsMessages $newPhpcsMessages) {
 	$map = DiffLineMap::fromUnifiedDiff($unifiedDiff);
 	$fileName = DiffLineMap::getFileNameFromDiff($unifiedDiff);
 	return PhpcsMessages::fromPhpcsMessages(array_values(array_filter($newPhpcsMessages->getMessages(), function($newMessage) use ($oldPhpcsMessages, $map) {
@@ -23,11 +22,11 @@ function getNewPhpcsMessages(string $unifiedDiff, PhpcsMessages $oldPhpcsMessage
 		$oldMessagesContainingOldLineNumber = array_values(array_filter($oldPhpcsMessages->getMessages(), function($oldMessage) use ($oldLineNumber) {
 			return $oldMessage->getLineNumber() === $oldLineNumber;
 		}));
-		return ! count($oldMessagesContainingOldLineNumber) > 0;
+		return ! (count($oldMessagesContainingOldLineNumber) > 0);
 	})), $fileName);
 }
 
-function getNewPhpcsMessagesFromFiles(string $diffFile, string $phpcsOldFile, string $phpcsNewFile): PhpcsMessages {
+function getNewPhpcsMessagesFromFiles($diffFile, $phpcsOldFile, $phpcsNewFile) {
 	$unifiedDiff = file_get_contents($diffFile);
 	$oldFilePhpcsOutput = file_get_contents($phpcsOldFile);
 	$newFilePhpcsOutput = file_get_contents($phpcsNewFile);

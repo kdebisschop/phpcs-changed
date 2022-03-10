@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged;
 
@@ -9,9 +8,9 @@ use PhpcsChanged\PhpcsMessage;
 use function PhpcsChanged\Cli\getLongestString;
 
 class FullReporter implements Reporter {
-	public function getFormattedMessages(PhpcsMessages $messages, array $options): string {
-		$files = array_unique(array_map(function(PhpcsMessage $message): string {
-			return $message->getFile() ?? 'STDIN';
+	public function getFormattedMessages(PhpcsMessages $messages, array $options) {
+		$files = array_unique(array_map(function(PhpcsMessage $message) {
+			return $message->getFile() ?: 'STDIN';
 		}, $messages->getMessages()));
 		if (empty($files)) {
 			$files = ['STDIN'];
@@ -22,15 +21,15 @@ class FullReporter implements Reporter {
 			return '';
 		}
 
-		return implode("\n", array_filter(array_map(function(string $file) use ($messages, $options): ?string {
-			$messagesForFile = array_values(array_filter($messages->getMessages(), function(PhpcsMessage $message) use ($file): bool {
-				return ($message->getFile() ?? 'STDIN') === $file;
+		return implode("\n", array_filter(array_map(function($file) use ($messages, $options) {
+			$messagesForFile = array_values(array_filter($messages->getMessages(), function(PhpcsMessage $message) use ($file) {
+				return ($message->getFile() ?: 'STDIN') === $file;
 			}));
 			return $this->getFormattedMessagesForFile($messagesForFile, $file, $options);
 		}, $files)));
 	}
 
-	private function getFormattedMessagesForFile(array $messages, string $file, array $options): ?string {
+	private function getFormattedMessagesForFile(array $messages, $file, array $options) {
 		$lineCount = count($messages);
 		if ($lineCount < 1) {
 			return null;
@@ -46,11 +45,11 @@ class FullReporter implements Reporter {
 		$errorPlural = ($errorsCount === 1) ? '' : 'S';
 		$warningPlural = ($warningsCount === 1) ? '' : 'S';
 
-		$longestNumber = getLongestString(array_map(function(PhpcsMessage $message): int {
+		$longestNumber = getLongestString(array_map(function(PhpcsMessage $message) {
 			return $message->getLineNumber();
 		}, $messages));
 
-		$formattedLines = implode("\n", array_map(function(PhpcsMessage $message) use ($longestNumber, $options): string {
+		$formattedLines = implode("\n", array_map(function(PhpcsMessage $message) use ($longestNumber, $options) {
 			$source = $message->getSource() ?: 'Unknown';
 			$sourceString = isset($options['s']) ? " ({$source})" : '';
 			return sprintf(" %{$longestNumber}d | %s | %s%s", $message->getLineNumber(), $message->getType(), $message->getMessage(), $sourceString);
@@ -68,7 +67,7 @@ FOUND {$errorsCount} ERROR{$errorPlural} AND {$warningsCount} WARNING{$warningPl
 EOF;
 	}
 
-	public function getExitCode(PhpcsMessages $messages): int {
+	public function getExitCode(PhpcsMessages $messages) {
 		return (count($messages->getMessages()) > 0) ? 1 : 0;
 	}
 }

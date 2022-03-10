@@ -1,12 +1,11 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged\SvnWorkflow;
 
 use PhpcsChanged\NoChangesException;
 use PhpcsChanged\ShellException;
 
-function validateSvnFileExists(string $svnFile, string $svn, callable $isReadable, callable $executeCommand, callable $debug): void {
+function validateSvnFileExists($svnFile, $svn, callable $isReadable, callable $executeCommand, callable $debug) {
 	if (! $isReadable($svnFile)) {
 		throw new ShellException("Cannot read file '{$svnFile}'");
 	}
@@ -19,7 +18,7 @@ function validateSvnFileExists(string $svnFile, string $svn, callable $isReadabl
 	}
 }
 
-function getSvnUnifiedDiff(string $svnFile, string $svn, callable $executeCommand, callable $debug): string {
+function getSvnUnifiedDiff($svnFile, $svn, callable $executeCommand, callable $debug) {
 	$unifiedDiffCommand = "{$svn} diff " . escapeshellarg($svnFile);
 	$debug('running diff command:', $unifiedDiffCommand);
 	$unifiedDiff = $executeCommand($unifiedDiffCommand);
@@ -30,7 +29,7 @@ function getSvnUnifiedDiff(string $svnFile, string $svn, callable $executeComman
 	return $unifiedDiff;
 }
 
-function isNewSvnFile(string $svnFile, string $svn, callable $executeCommand, callable $debug): bool {
+function isNewSvnFile($svnFile, $svn, callable $executeCommand, callable $debug) {
 	$svnStatusCommand = "${svn} info " . escapeshellarg($svnFile);
 	$debug('checking svn status of file with command:', $svnStatusCommand);
 	$svnStatusOutput = $executeCommand($svnStatusCommand);
@@ -41,7 +40,7 @@ function isNewSvnFile(string $svnFile, string $svn, callable $executeCommand, ca
 	return (false !== strpos($svnStatusOutput, 'Schedule: add'));
 }
 
-function getSvnBasePhpcsOutput(string $svnFile, string $svn, string $phpcs, string $phpcsStandardOption, callable $executeCommand, callable $debug): string {
+function getSvnBasePhpcsOutput($svnFile, $svn, $phpcs, $phpcsStandardOption, callable $executeCommand, callable $debug) {
 	$oldFilePhpcsOutputCommand = "${svn} cat " . escapeshellarg($svnFile) . " | {$phpcs} --report=json -q" . $phpcsStandardOption . ' --stdin-path=' .  escapeshellarg($svnFile) . ' -';
 	$debug('running orig phpcs command:', $oldFilePhpcsOutputCommand);
 	$oldFilePhpcsOutput = $executeCommand($oldFilePhpcsOutputCommand);
@@ -52,7 +51,7 @@ function getSvnBasePhpcsOutput(string $svnFile, string $svn, string $phpcs, stri
 	return $oldFilePhpcsOutput;
 }
 
-function getSvnNewPhpcsOutput(string $svnFile, string $phpcs, string $cat, string $phpcsStandardOption, callable $executeCommand, callable $debug): string {
+function getSvnNewPhpcsOutput($svnFile, $phpcs, $cat, $phpcsStandardOption, callable $executeCommand, callable $debug) {
 	$newFilePhpcsOutputCommand = "{$cat} " . escapeshellarg($svnFile) . " | {$phpcs} --report=json -q" . $phpcsStandardOption . ' --stdin-path=' .  escapeshellarg($svnFile) . ' -';
 	$debug('running new phpcs command:', $newFilePhpcsOutputCommand);
 	$newFilePhpcsOutput = $executeCommand($newFilePhpcsOutputCommand);

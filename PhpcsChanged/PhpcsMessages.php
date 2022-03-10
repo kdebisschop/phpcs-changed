@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace PhpcsChanged;
 
@@ -18,13 +17,13 @@ class PhpcsMessages {
 		$this->messages = $messages;
 	}
 
-	public static function merge(array $messages): self {
+	public static function merge(array $messages) {
 		return self::fromPhpcsMessages(array_merge(...array_map(function(PhpcsMessages $message) {
 			return $message->getMessages();
 		}, $messages)));
 	}
 
-	public static function fromPhpcsMessages(array $messages, string $fileName = null): self {
+	public static function fromPhpcsMessages(array $messages, $fileName = null) {
 		return new self(array_map(function(PhpcsMessage $message) use ($fileName) {
 			if ($fileName) {
 				$message->setFile($fileName);
@@ -33,15 +32,15 @@ class PhpcsMessages {
 		}, $messages));
 	}
 
-	public static function fromArrays(array $messages, string $fileName = null): self {
+	public static function fromArrays(array $messages, $fileName = null) {
 		return new self(array_map(function(array $messageArray) use ($fileName) {
-			return new PhpcsMessage($messageArray['line'] ?? null, $fileName, $messageArray['type'] ?? 'ERROR', $messageArray);
+			return new PhpcsMessage(isset($messageArray['line']) ? $messageArray['line'] : NULL, $fileName, isset($messageArray['type']) ? $messageArray['type'] : 'ERROR', $messageArray);
 		}, $messages));
 	}
 
-	public static function fromPhpcsJson(string $messages, string $forcedFileName = null): self {
+	public static function fromPhpcsJson($messages, $forcedFileName = null) {
 		if (empty($messages)) {
-			return self::fromArrays([], $forcedFileName ?? 'STDIN');
+			return self::fromArrays([], isset($forcedFileName) ? $forcedFileName : 'STDIN');
 		}
 		$parsed = json_decode($messages, true);
 		if (! $parsed) {
@@ -63,20 +62,20 @@ class PhpcsMessages {
 		if (! is_array($parsed['files'][$fileName]['messages'])) {
 			throw new \Exception('Failed to find messages array in phpcs JSON: ' . var_export($messages, true));
 		}
-		return self::fromArrays($parsed['files'][$fileName]['messages'], $forcedFileName ?? $fileName);
+		return self::fromArrays($parsed['files'][$fileName]['messages'], isset($forcedFileName) ? $forcedFileName : $fileName);
 	}
 
-	public function getMessages(): array {
+	public function getMessages() {
 		return $this->messages;
 	}
 
-	public function getLineNumbers(): array {
+	public function getLineNumbers() {
 		return array_map(function($message) {
 			return $message->getLineNumber();
 		}, $this->messages);
 	}
 
-	public function toPhpcsJson(): string {
+	public function toPhpcsJson() {
 		$reporter = new JsonReporter();
 		return $reporter->getFormattedMessages($this, []);
 	}
